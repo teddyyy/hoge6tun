@@ -73,8 +73,8 @@ int cread(int fd, char *buf, int n)
   	int nread;
 
   	if((nread = read(fd, buf, n)) < 0){
-    	perror("Reading data");
-    	exit(1);
+    		perror("Reading data");
+    		exit(1);
   	}
 
   	return nread;
@@ -87,8 +87,8 @@ int cwrite(int fd, char *buf, int n)
 
   	if((nwrite = write(fd, buf, n)) < 0) {
 		perror("Writing data");
-    	exit(1);
- 	 }
+    		exit(1);
+ 	}
   
   	return nwrite;
 }
@@ -127,14 +127,14 @@ void* mon_tap2net (void* fd)
 	while(1) {
 		
 		/* data from tun/tap: just read it and write it to the network */
-    	nread = cread(fds->tap_fd, buffer, BUFSIZE);
+    		nread = cread(fds->tap_fd, buffer, BUFSIZE);
 
 		tap2net++;
-    	do_debug("TAP2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
+    		do_debug("TAP2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
 
 		/* write length + packet */
 		nwrite = sendto(fds->remote_net_fd, buffer, nread, 0, 
-						(struct sockaddr *)&fds->remote, sizeof(fds->remote));
+				(struct sockaddr *)&fds->remote, sizeof(fds->remote));
 
 		do_debug("TAP2NET %lu: Written %d bytes to the network\n", tap2net, nwrite);
 	}
@@ -150,7 +150,7 @@ void* mon_net2tap (void* fd)
 	socklen_t sin_size;
 
 	while (1) {
-		/* data from the network: read it, and write it to the tun/tap interface. 
+	/* data from the network: read it, and write it to the tun/tap interface. 
        	 * We need to read the length first, and then the packet */
 
         /* Read length */
