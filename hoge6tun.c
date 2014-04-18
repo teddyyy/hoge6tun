@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 	int option;
 	int flags = IFF_TUN;
 	char if_name[IFNAMSIZ] = "";
-  	char remote_ip[36] = "";            /* dotted quad IP string */
+  	char remote_ip[40] = "";            /* dotted quad IP string */
  	unsigned short int port = PORT;
   	int sock_fd;
 	pthread_t th1, th2;
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 				strncpy(if_name, optarg, IFNAMSIZ - 1);
 				break;
 			case 'r':
-				strncpy(remote_ip, optarg, 36);
+				strncpy(remote_ip, optarg, 40);
 				break;
 			case 'u':
 				flags = IFF_TUN;
