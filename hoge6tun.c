@@ -150,25 +150,25 @@ void* mon_net2tap (void* fd)
 	socklen_t sin_size;
 
 	while (1) {
-	/* data from the network: read it, and write it to the tun/tap interface. 
-       	 * We need to read the length first, and then the packet */
+		/* data from the network: read it, and write it to the tun/tap interface. 
+       	 	* We need to read the length first, and then the packet */
 
-        /* Read length */
+        	/* Read length */
 		nread = recvfrom(fds->local_net_fd, buffer, sizeof(buffer), 0, 
 						(struct sockaddr*)&fds->local, &sin_size);
 
-      	if(nread == 0) {
-        	/* ctrl-c at the other end */
-        	break;
-      	}
+      		if(nread == 0) {
+        		/* ctrl-c at the other end */
+        		break;
+      		}
 		
 		net2tap++;
 		/* read packet */
-      	do_debug("NET2TAP %lu: Read %d bytes from the network\n", net2tap, nread);
+      		do_debug("NET2TAP %lu: Read %d bytes from the network\n", net2tap, nread);
 
-      	/* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
-      	nwrite = cwrite(fds->tap_fd, buffer, nread);
-      	do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
+      		/* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
+      		nwrite = cwrite(fds->tap_fd, buffer, nread);
+      		do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
 	}
 
 	exit(1);
@@ -232,36 +232,36 @@ int main(int argc, char *argv[])
 	argc -= optind;
 
 	if(argc > 0) {
-    	my_err("Too many options!\n");
+    		my_err("Too many options!\n");
 		printf("\n");
-    	usage();
+    		usage();
   	}
 
 	if(*if_name == '\0' || *remote_ip == '\0') {
-    	my_err("Must specify interface name and remote address\n");
+    		my_err("Must specify interface name and remote address\n");
 		printf("\n");
-    	usage();
+    		usage();
   	} 
 
 	memset(&fds, 0, sizeof(fds));
 
 	if((daemon(1,1)) != 0){
 		perror("daaemon: ");
-        exit(1);
-    }   
+        	exit(1);
+    	}   
 
 	/* initialize tun/tap interface */
   	if ((fds.tap_fd = tun_alloc(if_name, flags | IFF_NO_PI)) < 0 ) {
-    	my_err("Error connecting to tun/tap interface %s!\n", if_name);
-    	exit(1);
+    		my_err("Error connecting to tun/tap interface %s!\n", if_name);
+    		exit(1);
   	}
 
 	do_debug("Successfully connected to interface %s\n", if_name);
 
 	/* for remote */
 	if ((sock_fd = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
-    	perror("socket()");
-    	exit(1);
+    		perror("socket()");
+    		exit(1);
   	}
 
 	fds.remote.sin6_family = AF_INET6;
@@ -274,16 +274,16 @@ int main(int argc, char *argv[])
 
 	/* for local */
 	if ((sock_fd = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
-    	perror("socket()");
-    	exit(1);
+    		perror("socket()");
+    		exit(1);
   	}
 
    	fds.local.sin6_family = AF_INET6;
    	fds.local.sin6_addr = in6addr_any;
    	fds.local.sin6_port = htons(port);
    	if (bind(sock_fd, (struct sockaddr*) &fds.local, sizeof(fds.local)) < 0) {
-    	perror("bind()");
-      	exit(1);
+    		perror("bind()");
+      		exit(1);
    	}
 
 	fds.local_net_fd = sock_fd;
