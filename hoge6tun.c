@@ -28,7 +28,7 @@
 int debug;
 char *progname;
 
-struct fd {
+struct hoge6tun {
 	int tap_fd;
 	int remote_net_fd;
 	int local_net_fd;
@@ -116,37 +116,37 @@ void my_err(char *msg, ...)
 
 }
 
-void* mon_tap2net (void* fd)
+void* mon_tap2net (void* p)
 {
 
 	uint16_t nread, nwrite;
 	char buffer[BUFSIZE];
 	unsigned long int tap2net = 0;
-	struct fd *fds = fd;
+	struct hoge6tun *h6t = p;
 
 	while(1) {
 
 		/* data from tun/tap: just read it and write it to the network */
-		nread = cread(fds->tap_fd, buffer, BUFSIZE);
+		nread = cread(h6t->tap_fd, buffer, BUFSIZE);
 
 		tap2net++;
 		do_debug("TAP2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
 
 		/* write length + packet */
-		nwrite = sendto(fds->remote_net_fd, buffer, nread, 0,
-				(struct sockaddr *)&fds->remote, sizeof(fds->remote));
+		nwrite = sendto(h6t->remote_net_fd, buffer, nread, 0,
+				(struct sockaddr *)&h6t->remote, sizeof(h6t->remote));
 
 		do_debug("TAP2NET %lu: Written %d bytes to the network\n", tap2net, nwrite);
 	}
 }
 
-void* mon_net2tap (void* fd)
+void* mon_net2tap (void* p)
 {
 
 	uint16_t nread, nwrite;
 	char buffer[BUFSIZE];
 	unsigned long int net2tap = 0;
-	struct fd *fds = fd;
+	struct hoge6tun *h6t = p;
 	socklen_t sin_size;
 
 	while (1) {
@@ -154,8 +154,8 @@ void* mon_net2tap (void* fd)
        	 	* We need to read the length first, and then the packet */
 
 		/* Read length */
-		nread = recvfrom(fds->local_net_fd, buffer, sizeof(buffer), 0,
-						(struct sockaddr*)&fds->local, &sin_size);
+		nread = recvfrom(h6t->local_net_fd, buffer, sizeof(buffer), 0,
+						(struct sockaddr*)&h6t->local, &sin_size);
 
 		if(nread == 0) {
 			/* ctrl-c at the other end */
@@ -167,7 +167,7 @@ void* mon_net2tap (void* fd)
 		do_debug("NET2TAP %lu: Read %d bytes from the network\n", net2tap, nread);
 
 		/* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
-		nwrite = cwrite(fds->tap_fd, buffer, nread);
+		nwrite = cwrite(h6t->tap_fd, buffer, nread);
 		do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
 	}
 
@@ -190,7 +190,7 @@ void usage(void) {
 
 int main(int argc, char *argv[])
 {
-	struct fd fds;
+	struct hoge6tun h6t;
 	int option;
 	int flags = IFF_TUN;
 	char if_name[IFNAMSIZ] = "";
@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
 		usage();
 	}
 
-	memset(&fds, 0, sizeof(fds));
+	memset(&h6t, 0, sizeof(h6t));
 
 	if((daemon(1,1)) != 0){
 		perror("daaemon: ");
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* initialize tun/tap interface */
-	if ((fds.tap_fd = tun_alloc(if_name, flags | IFF_NO_PI)) < 0 ) {
+	if ((h6t.tap_fd = tun_alloc(if_name, flags | IFF_NO_PI)) < 0 ) {
 		my_err("Error connecting to tun/tap interface %s!\n", if_name);
 		exit(1);
 	}
@@ -264,12 +264,12 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	fds.remote.sin6_family = AF_INET6;
-	inet_pton(AF_INET6, remote_ip, &fds.remote.sin6_addr);
-	fds.remote.sin6_port = htons(port);
+	h6t.remote.sin6_family = AF_INET6;
+	inet_pton(AF_INET6, remote_ip, &h6t.remote.sin6_addr);
+	h6t.remote.sin6_port = htons(port);
 
-	fds.remote_net_fd = sock_fd;
-	inet_ntop(AF_INET6, &fds.remote.sin6_addr, remote_ip, sizeof(remote_ip));
+	h6t.remote_net_fd = sock_fd;
+	inet_ntop(AF_INET6, &h6t.remote.sin6_addr, remote_ip, sizeof(remote_ip));
 	do_debug("Connected to remote %s\n", remote_ip);
 
 	/* for local */
@@ -278,20 +278,20 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	fds.local.sin6_family = AF_INET6;
-	fds.local.sin6_addr = in6addr_any;
-	fds.local.sin6_port = htons(port);
-	if (bind(sock_fd, (struct sockaddr*) &fds.local, sizeof(fds.local)) < 0) {
+	h6t.local.sin6_family = AF_INET6;
+	h6t.local.sin6_addr = in6addr_any;
+	h6t.local.sin6_port = htons(port);
+	if (bind(sock_fd, (struct sockaddr*) &h6t.local, sizeof(h6t.local)) < 0){
 		perror("bind()");
 		exit(1);
 	}
 
-	fds.local_net_fd = sock_fd;
-	inet_ntop(AF_INET6, &fds.remote.sin6_addr, remote_ip, sizeof(remote_ip));
+	h6t.local_net_fd = sock_fd;
+	inet_ntop(AF_INET6, &h6t.remote.sin6_addr, remote_ip, sizeof(remote_ip));
 
 	/* fall into pthread */
-	pthread_create(&th1, NULL, mon_tap2net, (void*)&fds);
-	pthread_create(&th2, NULL, mon_net2tap, (void*)&fds);
+	pthread_create(&th1, NULL, mon_tap2net, (void*)&h6t);
+	pthread_create(&th2, NULL, mon_net2tap, (void*)&h6t);
 
 	pthread_join(th1, NULL);
 	pthread_join(th2, NULL);
