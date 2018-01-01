@@ -15,7 +15,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <arpa/inet.h> 
+#include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <errno.h>
@@ -36,9 +36,9 @@ struct fd {
 	struct sockaddr_in6 local;
 };
 
-int tun_alloc(char *dev, int flags) 
+int tun_alloc(char *dev, int flags)
 {
-	
+
 	struct ifreq ifr;
 	int fd, err;
 	char *clonedev = "/dev/net/tun";
@@ -62,42 +62,42 @@ int tun_alloc(char *dev, int flags)
 		return err;
 	}
 
- 	strcpy(dev, ifr.ifr_name);
+	strcpy(dev, ifr.ifr_name);
 
-  	return fd;
+	return fd;
 }
 
 int cread(int fd, char *buf, int n)
 {
-  
-  	int nread;
 
-  	if((nread = read(fd, buf, n)) < 0){
-    		perror("Reading data");
-    		exit(1);
-  	}
+	int nread;
 
-  	return nread;
+	if((nread = read(fd, buf, n)) < 0){
+		perror("Reading data");
+		exit(1);
+	}
+
+	return nread;
 }
 
 int cwrite(int fd, char *buf, int n)
-{  
+{
 
-  	int nwrite;
+	int nwrite;
 
-  	if((nwrite = write(fd, buf, n)) < 0) {
+	if((nwrite = write(fd, buf, n)) < 0) {
 		perror("Writing data");
-    		exit(1);
- 	}
-  
-  	return nwrite;
+		exit(1);
+	}
+
+	return nwrite;
 }
 
-void do_debug(char *msg, ...) 
+void do_debug(char *msg, ...)
 {
-	
+
 	va_list argp;
-	
+
 	if(debug) {
 		va_start(argp, msg);
 		vfprintf(stderr, msg, argp);
@@ -105,35 +105,35 @@ void do_debug(char *msg, ...)
 	}
 }
 
-void my_err(char *msg, ...) 
+void my_err(char *msg, ...)
 {
-	
+
 	va_list argp;
-	
+
 	va_start(argp, msg);
 	vfprintf(stderr, msg, argp);
 	va_end(argp);
 
 }
 
-void* mon_tap2net (void* fd) 
+void* mon_tap2net (void* fd)
 {
 
 	uint16_t nread, nwrite;
-	char buffer[BUFSIZE]; 
+	char buffer[BUFSIZE];
 	unsigned long int tap2net = 0;
 	struct fd *fds = fd;
 
 	while(1) {
-		
+
 		/* data from tun/tap: just read it and write it to the network */
-    		nread = cread(fds->tap_fd, buffer, BUFSIZE);
+		nread = cread(fds->tap_fd, buffer, BUFSIZE);
 
 		tap2net++;
-    		do_debug("TAP2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
+		do_debug("TAP2NET %lu: Read %d bytes from the tap interface\n", tap2net, nread);
 
 		/* write length + packet */
-		nwrite = sendto(fds->remote_net_fd, buffer, nread, 0, 
+		nwrite = sendto(fds->remote_net_fd, buffer, nread, 0,
 				(struct sockaddr *)&fds->remote, sizeof(fds->remote));
 
 		do_debug("TAP2NET %lu: Written %d bytes to the network\n", tap2net, nwrite);
@@ -144,31 +144,31 @@ void* mon_net2tap (void* fd)
 {
 
 	uint16_t nread, nwrite;
-	char buffer[BUFSIZE]; 
+	char buffer[BUFSIZE];
 	unsigned long int net2tap = 0;
 	struct fd *fds = fd;
 	socklen_t sin_size;
 
 	while (1) {
-		/* data from the network: read it, and write it to the tun/tap interface. 
+		/* data from the network: read it, and write it to the tun/tap interface.
        	 	* We need to read the length first, and then the packet */
 
-        	/* Read length */
-		nread = recvfrom(fds->local_net_fd, buffer, sizeof(buffer), 0, 
+		/* Read length */
+		nread = recvfrom(fds->local_net_fd, buffer, sizeof(buffer), 0,
 						(struct sockaddr*)&fds->local, &sin_size);
 
-      		if(nread == 0) {
-        		/* ctrl-c at the other end */
-        		break;
-      		}
-		
+		if(nread == 0) {
+			/* ctrl-c at the other end */
+			break;
+		}
+
 		net2tap++;
 		/* read packet */
-      		do_debug("NET2TAP %lu: Read %d bytes from the network\n", net2tap, nread);
+		do_debug("NET2TAP %lu: Read %d bytes from the network\n", net2tap, nread);
 
-      		/* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
-      		nwrite = cwrite(fds->tap_fd, buffer, nread);
-      		do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
+		/* now buffer[] contains a full packet or frame, write it into the tun/tap interface */
+		nwrite = cwrite(fds->tap_fd, buffer, nread);
+		do_debug("NET2TAP %lu: Written %d bytes to the tap interface\n", net2tap, nwrite);
 	}
 
 	exit(1);
@@ -194,9 +194,9 @@ int main(int argc, char *argv[])
 	int option;
 	int flags = IFF_TUN;
 	char if_name[IFNAMSIZ] = "";
-  	char remote_ip[40] = "";            /* dotted quad IP string */
- 	unsigned short int port = PORT;
-  	int sock_fd;
+	char remote_ip[40] = "";            /* dotted quad IP string */
+	unsigned short int port = PORT;
+	int sock_fd;
 	pthread_t th1, th2;
 
 	progname = argv[0];
@@ -222,47 +222,47 @@ int main(int argc, char *argv[])
 				flags = IFF_TAP;
 				break;
 			default:
-         		my_err("Unknown option %c\n", option);
+				my_err("Unknown option %c\n", option);
 				printf("\n");
-         		usage();
-     	}
-  	}
+				usage();
+		}
+	}
 
 	argv += optind;
 	argc -= optind;
 
 	if(argc > 0) {
-    		my_err("Too many options!\n");
+		my_err("Too many options!\n");
 		printf("\n");
-    		usage();
-  	}
+		usage();
+	}
 
 	if(*if_name == '\0' || *remote_ip == '\0') {
-    		my_err("Must specify interface name and remote address\n");
+		my_err("Must specify interface name and remote address\n");
 		printf("\n");
-    		usage();
-  	} 
+		usage();
+	}
 
 	memset(&fds, 0, sizeof(fds));
 
 	if((daemon(1,1)) != 0){
 		perror("daaemon: ");
-        	exit(1);
-    	}   
+		exit(1);
+	}
 
 	/* initialize tun/tap interface */
-  	if ((fds.tap_fd = tun_alloc(if_name, flags | IFF_NO_PI)) < 0 ) {
-    		my_err("Error connecting to tun/tap interface %s!\n", if_name);
-    		exit(1);
-  	}
+	if ((fds.tap_fd = tun_alloc(if_name, flags | IFF_NO_PI)) < 0 ) {
+		my_err("Error connecting to tun/tap interface %s!\n", if_name);
+		exit(1);
+	}
 
 	do_debug("Successfully connected to interface %s\n", if_name);
 
 	/* for remote */
 	if ((sock_fd = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
-    		perror("socket()");
-    		exit(1);
-  	}
+		perror("socket()");
+		exit(1);
+	}
 
 	fds.remote.sin6_family = AF_INET6;
 	inet_pton(AF_INET6, remote_ip, &fds.remote.sin6_addr);
@@ -270,21 +270,21 @@ int main(int argc, char *argv[])
 
 	fds.remote_net_fd = sock_fd;
 	inet_ntop(AF_INET6, &fds.remote.sin6_addr, remote_ip, sizeof(remote_ip));
-   	do_debug("Connected to remote %s\n", remote_ip);
+	do_debug("Connected to remote %s\n", remote_ip);
 
 	/* for local */
 	if ((sock_fd = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
-    		perror("socket()");
-    		exit(1);
-  	}
+		perror("socket()");
+		exit(1);
+	}
 
-   	fds.local.sin6_family = AF_INET6;
-   	fds.local.sin6_addr = in6addr_any;
-   	fds.local.sin6_port = htons(port);
-   	if (bind(sock_fd, (struct sockaddr*) &fds.local, sizeof(fds.local)) < 0) {
-    		perror("bind()");
-      		exit(1);
-   	}
+	fds.local.sin6_family = AF_INET6;
+	fds.local.sin6_addr = in6addr_any;
+	fds.local.sin6_port = htons(port);
+	if (bind(sock_fd, (struct sockaddr*) &fds.local, sizeof(fds.local)) < 0) {
+		perror("bind()");
+		exit(1);
+	}
 
 	fds.local_net_fd = sock_fd;
 	inet_ntop(AF_INET6, &fds.remote.sin6_addr, remote_ip, sizeof(remote_ip));
